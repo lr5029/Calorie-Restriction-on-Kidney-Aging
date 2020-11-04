@@ -15,17 +15,18 @@ plot5
 ```
 
 #### after looking at the link
-* 0: MO = Macro  
-* 1, 2: PT(S3)
-* 4: Endo
-* 3: LH(DL)
-* 5: IC-A
-* 6: diverse.
-* 7: diverse.
-* 8: LH(AL)
-* 9: CD-PC
-* 10: MC
-* 11: Neutro
+##### left being the mouse database and right being the human database seperated by semicolon (if I didn't make a mistake)
+* 0: MO = Macro; LEUK  
+* 1, 2: PT(S3); PT
+* 4: Endo; Endo
+* 3: LH(DL); diverse
+* 5: IC-A; ICB or ICA
+* 6: diverse; LEUK
+* 7: diverse; seems to be PT or LEUK
+* 8: LH(AL); TAL
+* 9: CD-PC; PC
+* 10: MC; Fib or Mes
+* 11: Neutro; LEUK
 
 ```{r}
 as.data.frame(marker_genes_cluster)

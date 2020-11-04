@@ -255,19 +255,20 @@ all.markers = FindAllMarkers(kidney,
                              min.pct = MIN_PCT_CELLS_EXPR_GENE,
                              logfc.threshold = MIN_LOGFOLD_CHANGE,
                              only.pos = TRUE)
-marker_genes_cluster <- all.markers %>% group_by(cluster) %>% top_n(20, avg_logFC)
+marker_genes_cluster <- all.markers %>% 
+  group_by(cluster) %>% 
+  top_n(20, avg_logFC)
 
 
-# 0: MO = Macro
-# 1, 2: PT(S3)
-# 4: Endo
-# 8: CD-PC
-# 11: Neutro
+# 0: MO = Macro; LEUK
+# 1, 2: PT(S3); PT
+# 4: Endo; Endo
+# 11: Neutro; LEUK
 # after looking at the link
-# 3: LH(DL)
-# 5: IC-A
-# 6: diverse.
+# 3: LH(DL); diverse
+# 5: IC-A; ICB or ICA
+# 6: diverse; LEUK
 # 7: diverse.
-# 8: LH(AL)
-# 9: CD-PC
-# 10: MC
+# 8: LH(AL); TAL
+# 9: CD-PC; PC
+# 10: MC; Fib or Mes
