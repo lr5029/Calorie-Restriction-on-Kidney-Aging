@@ -12,4 +12,7 @@
 - sex difference within the same cell type. E.g., in cluster 1, compare M-O vs. F-O number of cell for each cluster
 - age effects on metabolism: E.g., M-O vs. M-Y
 - calorie restriction on metabolism: E.g., M-CR vs. M-O. 
-- compound effects of calorie restriction (maybe it does not work the same way for female vs. male): comparing the results of M-CR vs. M-O with F-CR vs. F-O. 
+- compound effects of calorie restriction (maybe it does not work the same way for female vs. male): comparing the results of M-CR vs. M-O with F-CR vs. F-O.
+
+### Sources
+- http://humphreyslab.com/SingleCell/search.php
