@@ -10,6 +10,14 @@ library(devtools)
 # install_github("ggjlab/scMCA")
 library(perturb.met)
 library(scMCA)
+# install.packages(c('codetools', 'KernSmooth', 'nlme', 'deldir', 'lubridate', 'raster', 'RcppAnnoy', 'reticulate', 'rtracklayer', 'uwot'))
+# if (!requireNamespace("BiocManager", quietly = TRUE))
+#   install.packages("BiocManager")
+# BiocManager::install(c(
+#   "codetools", "KernSmooth", "nlme", "RcppAnnoy", "rtracklayer"
+# ), update = TRUE, ask = FALSE)
+# BiocManager::install("DESeq")
+# library(DESeq)
 
 cbPalette<-c("azure4","black","blue","brown","cadetblue","chartreuse","cyan",
              "darkorange","darkorchid","deeppink","gold","lightcoral","lightseagreen","magenta","red","lightsalmon","yellow","mediumorchid4","deepskyblue","mediumvioletred","olivedrab","cornsilk","lavender","navajowhite4")
@@ -106,21 +114,66 @@ total<-colSums(cluster_data)
 total<-total/median(total)
 memory.limit(size=56000)
 cluster_data<-cluster_data/matrix(rep(total,nrow(cluster_data)),nrow=nrow(cluster_data),ncol=ncol(cluster_data),byrow = T)
-top1000<-head(VariableFeatures(kidney), 1000)
-cluster_data<-cluster_data[rownames(cluster_data) %in% top1000,]
-mca_result<-scMCA(scdata = cluster_data,numbers_plot = 3)
-head(rev(sort(table(mca_result$scMCA[kidney$seurat_clusters==0]))/sum(kidney$seurat_clusters==0)))
-head(rev(sort(table(mca_result$scMCA[kidney$seurat_clusters==8]))/sum(kidney$seurat_clusters==8)))
-head(rev(sort(table(mca_result$scMCA[kidney$seurat_clusters==11]))/sum(kidney$seurat_clusters==11)))
-
+# top1000<-head(VariableFeatures(kidney), 1000)
+# cluster_data<-cluster_data[rownames(cluster_data) %in% top1000,]
+# mca_result<-scMCA(scdata = cluster_data,numbers_plot = 3)
+# head(rev(sort(table(mca_result$scMCA[kidney$seurat_clusters==0]))/sum(kidney$seurat_clusters==0)))
+# head(rev(sort(table(mca_result$scMCA[kidney$seurat_clusters==8]))/sum(kidney$seurat_clusters==8)))
+# head(rev(sort(table(mca_result$scMCA[kidney$seurat_clusters==11]))/sum(kidney$seurat_clusters==11)))
 
 new.cluster.ids <- 
   c("PT(S1-S2)", "Macrophage_Ccl4 high", "PT(S3)", "IC-A", "LH(AL)",
     "LH(DL)", "EC", "T cell", "Macrophage_Lyz2 high", "CD-PC", "MC", "Neutrophil progenitor_S100a8 high")
-
 names(new.cluster.ids) <- levels(kidney)
 kidney <- RenameIdents(kidney, new.cluster.ids)
+save(kidney, file="kidney.RData")
 pdf("./Graph/dim_plot_label.pdf")
 plot_label <- DimPlot(kidney, reduction = "umap", label = TRUE, pt.size = 0.1)
 print(plot_label)
 dev.off()
+
+ad_sc <- data.frame(cluster_data)
+ad_genes<- rownames(ad_sc)
+sc_meta <- data.frame(subIDn=kidney$seurat_clusters,batchCond=kidney$orig.ident)
+table(sc_meta$subIDn, sc_meta$batchCond)
+
+
+cell_types<-c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+
+# Age Effect
+for (i in seq_along(cell_types)){
+  ref_freq<-rowSums(ad_sc[,sc_meta$subIDn==cell_types[11] & (sc_meta$batchCond=='M-Y' | sc_meta$batchCond=='F-Y')]>0)
+  ad_freq<- rowSums(ad_sc[,sc_meta$subIDn==cell_types[11] & (sc_meta$batchCond=='M-O' | sc_meta$batchCond=='F-O')]>0)
+  expression_level_final<-data.frame(genes=toupper(ad_genes),
+                                     exprs_ref=100*rowMeans(ad_sc[,sc_meta$subIDn==cell_types[11] & (sc_meta$batchCond=='M-Y' | sc_meta$batchCond=='F-Y')]),
+                                     exprs_treat=100*rowMeans(ad_sc[,sc_meta$subIDn==cell_types[11] & (sc_meta$batchCond=='M-O' | sc_meta$batchCond=='F-O')]))
+  good<- expression_level_final$exprs_ref>0 | expression_level_final$exprs_treat>0
+  expression_level_final<-expression_level_final[good,]
+  ref_freq<-ref_freq[good]
+  ad_freq<-ad_freq[good]
+  good<- (expression_level_final$exprs_ref>expression_level_final$exprs_treat & ref_freq>=10) |(expression_level_final$exprs_ref<expression_level_final$exprs_treat & ad_freq>=10) #require a gene to be expressed in at least 10 cells in either condition.  
+  expression_level_final<-expression_level_final[good,]
+  
+  expression_level_final<-na.omit(expression_level_final)
+  result_ad_sc<-findPerturbMet(expression_level_final,mets2genes,4)
+  save(result_ad_sc,file=paste("Age_Effect/Kidney_sc_perturbMet_neuron_subcluster_age_",cell_types[i],".RData",sep=""))
+}
+
+# Calorie Effect
+for (i in seq_along(cell_types)){
+  ref_freq<-rowSums(ad_sc[,sc_meta$subIDn==cell_types[i] & (sc_meta$batchCond=='M-O' | sc_meta$batchCond=='F-O')]>0)
+  ad_freq<- rowSums(ad_sc[,sc_meta$subIDn==cell_types[i] & (sc_meta$batchCond=='M-CR' | sc_meta$batchCond=='F-CR')]>0)
+  expression_level_final<-data.frame(genes=toupper(ad_genes),
+                                     exprs_ref=100*rowMeans(ad_sc[,sc_meta$subIDn==cell_types[i] & (sc_meta$batchCond=='M-O' | sc_meta$batchCond=='F-O')]),
+                                     exprs_treat=100*rowMeans(ad_sc[,sc_meta$subIDn==cell_types[i] & (sc_meta$batchCond=='M-CR' | sc_meta$batchCond=='F-CR')]))
+  good<- expression_level_final$exprs_ref>0 | expression_level_final$exprs_treat>0
+  expression_level_final<-expression_level_final[good,]
+  ref_freq<-ref_freq[good]
+  ad_freq<-ad_freq[good]
+  good<- (expression_level_final$exprs_ref>expression_level_final$exprs_treat & ref_freq>=10) |(expression_level_final$exprs_ref<expression_level_final$exprs_treat & ad_freq>=10) #require a gene to be expressed in at least 10 cells in either condition.  
+  expression_level_final<-expression_level_final[good,]
+  
+  expression_level_final<-na.omit(expression_level_final)
+  result_ad_sc<-findPerturbMet(expression_level_final,mets2genes,4)
+  save(result_ad_sc,file=paste("Calorie_Effect/Kidney_sc_perturbMet_neuron_subcluster_cal_",cell_types[i],".RData",sep=""))
+}
